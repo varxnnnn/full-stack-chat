@@ -1,46 +1,33 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import '../utils/constants.dart';
 
 class ApiService {
-  // User Registration
-  Future<bool> registerUser(String username, String password) async {
+  static const String baseUrl = "http://localhost:5000"; // Use 10.0.2.2 for emulator
+
+  static Future<Map<String, dynamic>?> registerUser(
+      String name, String email, String password) async {
     try {
+      final url = Uri.parse("$baseUrl/api/register");
       final response = await http.post(
-        Uri.parse('${Constants.apiUrl}/register'),
-        headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({'username': username, 'password': password}),
+        url,
+        headers: {"Content-Type": "application/json"},
+        body: jsonEncode({
+          "name": name,
+          "email": email,
+          "password": password,
+        }),
       );
 
-      if (response.statusCode == 201) {
-        print('Registration successful');
-        return true;
+      print("Response: ${response.body}"); // Debugging
+
+      if (response.statusCode == 200) {
+        return jsonDecode(response.body);
       } else {
-        print('Registration failed: ${response.statusCode}, ${response.body}');
-        throw Exception('Failed to register user');
+        return {"error": "Failed to register"};
       }
     } catch (e) {
-      print('Error during registration: $e');
-      throw Exception('Failed to connect to the server');
-    }
-  }
-
-  // User Login
-  Future<String?> loginUser(String username, String password) async {
-    final response = await http.post(
-      Uri.parse('${Constants.apiUrl}/login'),
-      headers: {'Content-Type': 'application/json'},
-      body: jsonEncode({'username': username, 'password': password}),
-    );
-
-    if (response.statusCode == 200) {
-      final token = jsonDecode(response.body)['token'];
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('jwtToken', token); // Save JWT token locally
-      return token;
-    } else {
-      throw Exception('Failed to login');
+      print("Error: $e");
+      return {"error": "Something went wrong"};
     }
   }
 }
